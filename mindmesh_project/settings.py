@@ -32,7 +32,7 @@ SECRET_KEY = os.environ.get(
     "SECRET_KEY", "dev-insecure-secret-key-change-me-before-deploying"
 )
 
-DEBUG = os.environ.get("DEBUG", "True") == "True"
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -47,13 +47,14 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # <-- ही नवीन ओळ टाका
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = "mindmesh_project.urls"
@@ -111,6 +112,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "assistant" / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -124,7 +126,7 @@ WAKE_WORD = os.environ.get("WAKE_WORD", "hey mindmesh")
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "")
 DEFAULT_CITY = os.environ.get("DEFAULT_CITY", "Aurangabad,IN")
 
-LLM_API_KEY = os.environ.get("LLM_API_KEY", "AQ.Ab8RN6KwpnZ_8kn2aOi5V3Y-iSmzhWZzI_JEmdS-Li1yBWbG8g")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "AQ.Ab8RN6Kbl1FVf0j0rR29JY17IdoJ-knIYY-UQwGO8Yrp5B0fwQ")
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
 LLM_MODEL = os.environ.get("LLM_MODEL", "gemini-3-flash-preview")
 # Optional override. Leave unset for auto (1.0 for Gemini 3 models, 0 otherwise).
