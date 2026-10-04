@@ -1,0 +1,15 @@
+Django>=4.2,<5.1
+psutil>=5.9
+requests>=2.31
+python-dotenv>=1.0
+langchain-openai>=0.1
+langchain-core>=0.2
+# Simple Sketchfab agent notebook
+langchain-openai>=0.1
+langchain-core>=0.2
+requests>=2.31
+
+# To run the notebook
+notebook>=7.0
+ipykernel>=6.0
+ipython>=8.0

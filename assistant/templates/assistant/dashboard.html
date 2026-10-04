@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ assistant_name }}</title>
+<link rel="stylesheet" href="{% static 'assistant/css/style.css' %}">
+</head>
+<body>
+{% csrf_token %}
+<div class="mm-app"
+     data-default-city="{{ default_city }}"
+     data-wake-word="{{ wake_word }}"
+     data-assistant-name="{{ assistant_name }}">
+
+  <!-- ===================== HEADER ===================== -->
+  <div class="mm-top">
+    {% if not llm_configured %}
+    <div class="mm-setup-banner">
+      ⚠ No LLM connected — {{ assistant_name }} can't answer questions yet.
+      Add <code>LLM_API_KEY</code> to your <code>.env</code> file and restart
+      the server. See <code>README.md</code> for details.
+    </div>
+    {% endif %}
+    <header class="mm-header">
+      <div class="mm-logo">{{ assistant_name|upper }}</div>
+      <div class="mm-status-line" id="mm-status-line">
+        <span class="mm-pulse-dot"></span>
+        <span id="mm-status-text">LISTENING FOR WAKE WORD</span>
+      </div>
+      <div class="mm-datetime">
+        <span id="mm-date">--</span>
+        <span id="mm-time">--:--:--</span>
+      </div>
+    </header>
+  </div>
+
+  <!-- ===================== MAIN GRID ===================== -->
+  <main class="mm-grid">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="mm-col mm-col-left">
+      <section class="mm-card">
+        <div class="mm-card-head">
+          <span>⚙ SYSTEM STATS</span>
+          <button class="mm-refresh" id="mm-refresh-stats" title="Refresh">⟳</button>
+        </div>
+        <div class="mm-stat-row">
+          <span>CPU Usage</span><span id="mm-cpu-pct">--%</span>
+        </div>
+        <div class="mm-bar"><div class="mm-bar-fill" id="mm-cpu-bar"></div></div>
+
+        <div class="mm-stat-row">
+          <span>RAM Usage</span><span id="mm-ram-label">-- GB</span>
+        </div>
+        <div class="mm-bar"><div class="mm-bar-fill" id="mm-ram-bar"></div></div>
+
+        <div class="mm-stat-grid">
+          <div class="mm-stat-box">
+            <div class="mm-stat-box-label">CPU</div>
+            <div class="mm-stat-box-value" id="mm-cpu-box">--%</div>
+          </div>
+          <div class="mm-stat-box">
+            <div class="mm-stat-box-label">Memory</div>
+            <div class="mm-stat-box-value" id="mm-mem-box">--%</div>
+          </div>
+          <div class="mm-stat-box">
+            <div class="mm-stat-box-label">Disk</div>
+            <div class="mm-stat-box-value" id="mm-disk-box">-- / --<br>GB</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mm-card">
+        <div class="mm-card-head">
+          <span>☁ WEATHER</span>
+          <button class="mm-refresh" id="mm-refresh-weather" title="Refresh">⟳</button>
+        </div>
+        <div class="mm-weather-main">
+          <div class="mm-temp" id="mm-weather-temp">--°C</div>
+          <div class="mm-weather-icon" id="mm-weather-icon">☁</div>
+        </div>
+        <div class="mm-weather-city" id="mm-weather-city">--</div>
+        <div class="mm-weather-desc" id="mm-weather-desc">--</div>
+        <div class="mm-weather-grid">
+          <div><span class="mm-wg-label">Humidity</span><span id="mm-weather-humidity">--%</span></div>
+          <div><span class="mm-wg-label">Wind</span><span id="mm-weather-wind">-- m/s</span></div>
+          <div><span class="mm-wg-label">Feels Like</span><span id="mm-weather-feels">--°C</span></div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- CENTER PANEL -->
+    <section class="mm-col mm-col-center">
+      <div class="mm-center-title" id="mm-center-title">
+        {{ assistant_name|upper }} | VISUAL KNOWLEDGE GRAPH
+      </div>
+      <div class="mm-visual-stage" id="mm-visual-stage">
+        <canvas id="mm-graph-canvas"></canvas>
+        <div class="mm-knowledge-panel" id="mm-knowledge-panel" hidden>
+          <img id="mm-knowledge-image" alt="">
+          <div class="mm-knowledge-title" id="mm-knowledge-title"></div>
+        </div>
+        <div class="mm-model3d-panel" id="mm-model3d-panel" hidden>
+          <iframe id="mm-model3d-frame"
+                  title="3D model"
+                  frameborder="0"
+                  allow="autoplay; fullscreen; xr-spatial-tracking"
+                  allowfullscreen
+                  mozallowfullscreen="true"
+                  webkitallowfullscreen="true"></iframe>
+          <div class="mm-knowledge-title" id="mm-model3d-title"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: CONVERSATION -->
+    <aside class="mm-col mm-col-right">
+      <div class="mm-conv-head">
+        <div class="mm-conv-title">Conversation</div>
+        <div class="mm-conv-sub">
+          <span>{{ assistant_name|upper }} ASSISTANT</span>
+          <span class="mm-live"><span class="mm-pulse-dot small"></span> LIVE SESSION</span>
+        </div>
+      </div>
+
+      <div class="mm-messages" id="mm-messages">
+        {% for msg in history %}
+        <div class="mm-msg mm-msg-{{ msg.role }}">
+          {% if msg.role == 'assistant' %}<span class="mm-msg-avatar">AI</span>{% endif %}
+          <div class="mm-msg-bubble">{{ msg.content }}</div>
+        </div>
+        {% empty %}
+        <div class="mm-msg mm-msg-assistant">
+          <span class="mm-msg-avatar">AI</span>
+          <div class="mm-msg-bubble">Welcome to {{ assistant_name }}. Initializing knowledge sync&hellip;</div>
+        </div>
+        <div class="mm-msg mm-msg-assistant">
+          <span class="mm-msg-avatar">AI</span>
+          <div class="mm-msg-bubble">How would I help you today?</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <form class="mm-input-row" id="mm-chat-form" autocomplete="off">
+        <input type="text" id="mm-chat-input" placeholder="Ask {{ assistant_name }}&hellip;" />
+        <button type="button" id="mm-mic-inline" title="Voice input">🎙</button>
+        <button type="submit" title="Send">➤</button>
+      </form>
+    </aside>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="mm-footer">
+    <div class="mm-footer-left">
+      <span class="mm-shield">🛡</span>
+      <div>
+        <div class="mm-footer-title">SYSTEM STATUS</div>
+        <div class="mm-footer-sub"><span class="mm-dot-green"></span>Online &nbsp;🔒 Secure</div>
+      </div>
+    </div>
+    <div class="mm-footer-center">
+      <button class="mm-icon-btn" id="mm-share-btn" title="Share">🔗</button>
+      <button class="mm-mic-btn" id="mm-mic-main" title="Talk to {{ assistant_name }}">
+        <span class="mm-mic-ring"></span>
+        <span class="mm-mic-icon">🎤</span>
+      </button>
+      <span class="mm-icon-btn" title="Connected">📶</span>
+      <span class="mm-icon-btn" title="Settings">⚙</span>
+    </div>
+    <div class="mm-footer-right">
+      <span class="mm-icon-btn" title="Favourite">★</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+  window.MM_CONFIG = {
+    csrfToken: document.querySelector('[name=csrfmiddlewaretoken]').value,
+    chatUrl: "{% url 'assistant:chat_api' %}",
+    statsUrl: "{% url 'assistant:stats_api' %}",
+    weatherUrl: "{% url 'assistant:weather_api' %}",
+    clockUrl: "{% url 'assistant:clock_api' %}",
+    wakeWord: "{{ wake_word }}",
+    assistantName: "{{ assistant_name }}",
+    defaultCity: "{{ default_city }}"
+  };
+</script>
+<script src="{% static 'assistant/js/knowledge_graph.js' %}"></script>
+<script src="{% static 'assistant/js/speech.js' %}"></script>
+<script src="{% static 'assistant/js/app.js' %}"></script>
+</body>
+</html>
